@@ -3,18 +3,46 @@ version: '3.8'
 services:
   node:
     build: ./node
+    container_name: node
+    environment:
+      DATABASE_URL: mysql://root:root@mysql:3306/db
+    entrypoint: dockerize -wait tcp://mysql:3306 -timeout 60s
+    command: npm start
     ports:
-      - 3000:3000
+      - "3000:3000"
+    networks:
+      - node-network
+    depends_on: 
+      - mysql
+
+  mysql:
+    image: mysql:8.0.30-debian
+    container_name: mysql
+    restart: always
+    environment:
+      MYSQL_ROOT_PASSWORD: root
+      MYSQL_DATABASE: db 
+    ports:
+      - "3306:3306"
+    volumes:
+      - mysql-data:/var/lib/mysql
     networks:
       - node-network
 
   nginx:
     build: ./nginx
+    container_name: nginx
     ports:
-      - 80:80
+      - "8080:80"
+    depends_on:
+      - node
     networks:
       - node-network
 
+volumes:
+  mysql-data:
+    driver: local
+    
 networks:
   node-network:
     driver: bridge
